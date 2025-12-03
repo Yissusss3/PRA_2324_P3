@@ -14,14 +14,14 @@ class BSTree {
         BSNode<T> *root;
         BSNode<T>* search (BSNode<T> *node, T e) const {
             if (node == nullptr) {
-                throw out_of_range("Elemento no encontrado");
+                throw runtime_error("Elemento no encontrado");
             }
-            if (e < node->elem) {
+            if (e == node->elem) {
+                return node;
+            } else if (e < node->elem) {
                 return search(node->left, e);
-            } else if (e > node->elem) {
-                return search(node->right, e);
             } else {
-                return node; // elemento encontrado
+                return search(node->right, e);
             }
         }   
         void delete_cascade(BSNode<T> *node) {
@@ -33,7 +33,7 @@ class BSTree {
         }
         BSNode<T>* remove(BSNode<T> *node, T e) {
             if (node == nullptr) {
-                throw out_of_range("Elemento no encontrado");
+                throw runtime_error("Elemento no encontrado");
             }
             if (e < node->elem) {
                 node->left = remove(node->left, e);
@@ -42,24 +42,33 @@ class BSTree {
             } else {
                 // nodo encontrado
                 if (node->left == nullptr) {
-                    BSNode<T> *temp = node->right;
+                    BSNode<T>* rightChild = node->right;
                     delete node;
-                    return temp;
+                    return rightChild;
                 } else if (node->right == nullptr) {
-                    BSNode<T> *temp = node->left;
+                    BSNode<T>* leftChild = node->left;
                     delete node;
-                    return temp;
+                    return leftChild;
+                } else {
+                    // nodo con dos hijos
+                    T succElem = max(node->left);
+                    node->elem = succElem;
+                    node->left = removeMax(node->left); 
                 }
-                // nodo con dos hijos
-                BSNode<T> *temp = searchMin(node->right);
-                node->elem = temp->elem;
-                node->right = remove(node->right, temp->elem);
             }
+            nelem--;
             return node;
+        }
+        void print_inorder(BSNode<T>* node, ostream &out) const {
+            if (node != nullptr) {
+                print_inorder(node->left, out);
+                out << node->elem << " ";
+                print_inorder(node->right, out);
+            }
         }
         T max(BSNode<T>* n) const {
             if (n == nullptr) {
-                throw out_of_range("Árbol vacío");
+                throw runtime_error("Árbol vacío");
             }
             while (n->right != nullptr) {
                 n = n->right;
@@ -68,7 +77,7 @@ class BSTree {
         }
         BSNode<T>* removeMax(BSNode<T>* n) {
             if (n == nullptr) {
-                throw out_of_range("Árbol vacío");
+                throw runtime_error("Árbol vacío");
             }
             if (n->right == nullptr) {
                 BSNode<T>* leftChild = n->left;
@@ -78,6 +87,20 @@ class BSTree {
             n->right = removeMax(n->right);
             return n;
         }
+        BSNode<T>* insert (BSNode<T>* n, T e) {
+            if (n == nullptr) {
+                nelem++;
+                return new BSNode<T>(e);
+            }
+            if (e < n->elem) {
+                n->left = insert(n->left, e);
+            } else if (e > n->elem) {
+                n->right = insert(n->right, e);
+            } else {
+                throw runtime_error("Elemento ya existe en el árbol");
+            }
+            return n;
+        }
         public:
         // miembros públicos
         BSTree() : nelem(0), root(nullptr) {}
@@ -85,15 +108,24 @@ class BSTree {
             return nelem;
         }
         T search (T e) const {
-            BSNode<T> *node = search(root, e);
-            return node->elem;
+            return search(root, e)->elem;
         }
         void remove (T e) {
             root = remove(root, e);
-            nelem--;
         }
         ~BSTree() {
             delete_cascade(root);
+        }
+        friend ostream& operator<<(ostream &out, const BSTree<T> &tree) {
+
+            tree.print_inorder(tree.root, out);
+            return out;
+        }
+        void insert (T e) {
+            root = insert(root, e);
+        }
+        T operator[](T e) const {
+            return search(e);
         }
 };
 
